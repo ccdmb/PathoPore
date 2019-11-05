@@ -1,0 +1,82 @@
+##### Calling bases
+
+mkdir lambda
+
+cd lambda
+
+wget https://www.dropbox.com/s/eml7z2d82n3k8lq/lambda.tar.gz?dl=0 -O lambda.tar.gz
+
+tar -xf lambda.tar.gz
+
+rm lambda.tar.gz
+
+conda install -c bioconda nanoplot 
+
+NanoPlot --fastq pass.fastq
+
+##### Filter reads
+
+conda install -c bioconda filtlong
+
+filtlong --min_mean_q 90 --min_length 3000 pass.fastq > ~/filtered/filtered.fq
+
+##### Align reads to reference
+
+source ~/git/pomoxis/venv/bin/activate
+
+mini_align -i filtered.fq -r ~/refs/lambda_ref.fasta -P -p lambda -t 14
+
+##### De novo assembly
+
+mini_assemble -i ~/filtered/filtered.fq -o denovo -p lambda_denovo -t 14 -c
+
+##### Error correction
+
+conda create -n nanopolish -c bioconda -c conda-forge nanopolish 
+
+mkdir ~/polished
+
+cd ~/polished
+
+mini_align -i ~/filtered/filtered.fq -r ~/denovo/lambda_denovo_final.fa -P -p polished -t 14
+
+deactivate
+
+##### Call variants
+
+nanopolish index -d ~/lambda/ ~/filtered/filtered.fq
+
+nanopolish variants --consensus -o ~/polished/polished.{1}.vcf -r ~/filtered/filtered.fq -b ~/polished/polished.bam -g ~/denovo/lambda_denovo_final.fa -q dcm,dam --min-candidate-frequency 0.1 -t 16
+
+nanopolish vcf2fasta -g ~/denovo/lambda_denovo_final.fa polished.*.vcf > polished.fa
+
+##### Get methylation data and map data
+
+mkdir ~/mods
+
+cd ~/mods
+
+wget https://www.dropbox.com/s/1n31to1ac108apa/methylation_example.tar.gz?dl=0 -O methylation_example.tar.gz 
+
+tar -xf methylation_example.tar.gz
+
+cd methylation_example
+
+source ~/git/pomoxis/venv/bin/activate
+
+mini_align -i ~/mods/methylation_example/albacore_output.fastq -r ~/mods/methylation_example/reference.fasta -P -p methyl -t 16
+
+deactivate
+
+source activate nanopolish
+
+nanopolish index -d fast5_files/ albacore_output.fastq
+
+###### Call Methylation and calculate frequency
+
+nanopolish call-methylation -t 15 -r albacore_output.fastq -b methyl.bam -g reference.fasta -w "chr20:5,000,000-10,000,000" > methylation_calls.tsv
+
+git clone --recursive https://github.com/jts/nanopolish.git ~/git/nanopolish
+
+~/git/nanopolish/scripts/calculate_methylation_frequency.py -i methylation_calls.tsv > methylation_frequency.tsv
+
