@@ -1,0 +1,63 @@
+# WORKDIR /tmp
+# RUN DEBIAN_FRONTEND=noninteractive \
+
+RUN  apt-get update \
+	&& apt-get install -y --no-install-recommends \
+		python3-pip \
+		git \
+		curl \
+		wget \
+		bzip2 \
+		make \
+		cmake \
+		zlib1g-dev \
+		python3-all-dev \
+		libhdf5-dev \
+		libatlas-base-dev \
+		libopenblas-base \
+		libopenblas-dev \
+		libbz2-dev \
+		liblzma-dev \
+		libffi-dev  \
+		python-virtualenv \
+	&& curl -O https://repo.anaconda.com/archive/Anaconda3-2019.03-Linux-x86_64.sh \
+	&& apt-get install default-jre -y --no-install-recommends \
+	&& wget https://github.com/broadinstitute/pilon/releases/download/v1.23/pilon-1.23.jar \
+	&& cp pilon-1.23.jar /usr/local/bin \
+	&& wget https://github.com/shenwei356/seqkit/releases/download/v0.11.0/seqkit_linux_amd64.tar.gz \
+	&& tar -zxf seqkit_linux_amd64.tar.gz \
+	&& cp seqkit /usr/local/bin \
+	&& git clone https://github.com/lh3/minimap2 \
+	&& pip3 install git+https://github.com/rrwick/Porechop \
+	&& pip3 install pomoxis \
+	&& virtualenv pomoxis --python=python3 --prompt "(pomoxis) " 
+
+
+### Dockerfile used above	; below is later interactive
+
+cd minimap2 
+make
+cp minimap2 /usr/local/bin 
+bash Anaconda3-2019.03-Linux-x86_64.sh \ # -yes \r \r -y
+
+# exit bash to activate
+conda install -c bioconda nanoplot -y \
+conda install -c bioconda filtlong -y \
+source ~/.bashrc \
+conda create -n nanopolish -c bioconda -c conda-forge nanopolish -y
+conda install -c conda-forge -c bioconda -c defaults canu -y \
+ 
+# Pilon
+java -Xmx16G  -jar /usr/local/bin/pilon-1.23.jar --help
+
+# Pomoxis
+ . pomoxis/bin/activate
+deactivate 
+
+### Maybe not needed
+#	&& sudo add-apt-repository ppa:deadsnakes/ppa	\
+-		python3.7 \
+-		virtualenv \
+
+
+  
