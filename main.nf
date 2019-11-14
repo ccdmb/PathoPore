@@ -61,14 +61,14 @@ filtlong_out_ch.into { filtlong_denovo_ch; map_filter_ch ; filter_index_ch}
  */
 
 process 'denovo_pomoxis' {
-  publishDir 'results_denovo_pomoxis/', mode: 'copy', saveAs: { filename -> "${name}_denovo_pomoxis.fa" }
+  publishDir 'results_denovo_pomoxis/', mode: 'copy', saveAs: { filename -> "${name}_denovo_pomoxis_final.fa" }
 
   input:
       tuple file(filter_reads), val(name) from filtlong_denovo_ch
       
 
   output:
-     tuple file("denovo_pomoxis.fa"), val(name) into denovo_pomoxis_out_ch
+     tuple file("denovo/denovo_pomoxis_final.fa"), val(name) into denovo_pomoxis_out_ch
 
   script:
   """
